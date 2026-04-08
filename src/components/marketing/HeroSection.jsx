@@ -83,12 +83,12 @@ export const HeroSection = () => {
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
-            <a 
-              href="https://ai.nydex.in" 
-              className="w-full sm:w-auto px-6 py-3 rounded-lg bg-foreground text-background font-medium text-base transition-all hover:opacity-90 flex items-center justify-center"
+            <button 
+              onClick={() => window.location.href = '/app'}
+              className="w-full sm:w-auto px-6 py-3 rounded-lg bg-foreground text-background font-medium text-base transition-all hover:opacity-90 flex items-center justify-center cursor-pointer"
             >
               Get NYDEX free
-            </a>
+            </button>
             
             <a 
               href="#product"

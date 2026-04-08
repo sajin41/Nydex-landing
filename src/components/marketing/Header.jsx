@@ -8,6 +8,14 @@ export const Header = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
+  const token = localStorage.getItem('token');
+
+  const handleSignOut = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('nydex_trial_active');
+    localStorage.removeItem('nydex_trial_start');
+    window.location.href = '/';
+  };
 
   useEffect(() => {
     const handleScroll = () => {
@@ -38,21 +46,20 @@ export const Header = () => {
   ];
 
   return (
-    <header 
-      className={`fixed top-12 left-0 right-0 z-40 transition-all duration-300 ${
-        isScrolled ? 'bg-background/80 backdrop-blur-md border-b border-border py-4' : 'bg-transparent py-6'
-      }`}
+    <header
+      className={`fixed top-0 left-0 right-0 z-40 transition-all duration-300 ${isScrolled ? 'bg-background/80 backdrop-blur-md border-b border-border py-4' : 'bg-transparent py-6'
+        }`}
     >
       <div className="container mx-auto px-6 max-w-7xl flex items-center justify-between">
         {/* Logo */}
-        <Link to="/" className="text-2xl font-bold tracking-tight text-foreground" onClick={() => window.scrollTo(0,0)}>
+        <Link to="/" className="text-2xl font-bold tracking-tight text-foreground" onClick={() => window.scrollTo(0, 0)}>
           NYDEX
         </Link>
 
         {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center gap-8">
           {navLinks.map((link) => (
-            <button 
+            <button
               key={link.id}
               onClick={() => scrollToSection(link.id)}
               className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
@@ -70,20 +77,29 @@ export const Header = () => {
           >
             {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
           </button>
-          
-          <a 
-            href="http://localhost:5174/login" 
-            className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-          >
-            Login
-          </a>
-          
-          <a
-            href="http://localhost:5174/"
+
+          {token ? (
+            <button
+              onClick={handleSignOut}
+              className="text-sm font-medium text-muted-foreground hover:text-destructive transition-colors"
+            >
+              Sign Out
+            </button>
+          ) : (
+            <a
+              href="/login"
+              className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Login
+            </a>
+          )}
+
+          <button
+            onClick={() => window.location.href = token ? '/app' : '/login'}
             className="px-5 py-2.5 rounded-full bg-foreground text-background text-sm font-medium hover:opacity-90 transition-opacity"
           >
             Try NYDEX AI
-          </a>
+          </button>
         </div>
 
         {/* Mobile Menu Toggle */}
@@ -94,7 +110,7 @@ export const Header = () => {
           >
             {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
           </button>
-          <button 
+          <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             className="p-2 text-foreground"
           >
@@ -107,7 +123,7 @@ export const Header = () => {
       {mobileMenuOpen && (
         <div className="absolute top-full left-0 right-0 bg-background border-b border-border p-4 flex flex-col gap-4 shadow-lg md:hidden">
           {navLinks.map((link) => (
-            <button 
+            <button
               key={link.id}
               onClick={() => scrollToSection(link.id)}
               className="text-left py-2 text-sm font-medium text-foreground transition-colors"
@@ -116,18 +132,27 @@ export const Header = () => {
             </button>
           ))}
           <div className="h-px bg-border my-2" />
-          <a 
-            href="https://ai.nydex.in/login" 
-            className="py-2 text-sm font-medium text-foreground"
-          >
-            Login
-          </a>
-          <a
-            href="https://ai.nydex.in"
-            className="mt-2 py-3 rounded-xl bg-foreground text-background flex justify-center text-sm font-medium"
+          {token ? (
+            <button
+              onClick={handleSignOut}
+              className="text-left py-2 text-sm font-medium text-destructive transition-colors"
+            >
+              Sign Out
+            </button>
+          ) : (
+            <a
+              href="/login"
+              className="py-2 text-sm font-medium text-foreground"
+            >
+              Login
+            </a>
+          )}
+          <button
+            onClick={() => window.location.href = token ? '/app' : '/login'}
+            className="mt-2 py-3 rounded-xl bg-foreground text-background flex justify-center text-sm font-medium w-full"
           >
             Try NYDEX AI
-          </a>
+          </button>
         </div>
       )}
     </header>

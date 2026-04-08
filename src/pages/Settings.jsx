@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { 
-  User, CreditCard, Settings as SettingsIcon, Bell, 
+import {
+  User, CreditCard, Settings as SettingsIcon, Bell,
   Palette, Shield, Database, FileText, HelpCircle,
-  Camera, Lock, Trash2, Zap, Crown, Globe, 
-  Zap as ZapIcon, Brain, TrendingUp, BellRing, 
+  Camera, Lock, Trash2, Zap, Crown, Globe,
+  Zap as ZapIcon, Brain, TrendingUp, BellRing,
   Moon, Sun, Type, ShieldCheck, Download, Trash,
   MessageSquare, Bug, ChevronRight, History as HistoryIcon
 } from 'lucide-react';
@@ -24,7 +24,10 @@ const SECTIONS = [
 
 export const SettingsPage = () => {
   const [activeSection, setActiveSection] = useState('account');
-  const [profile, setProfile] = useState({ name: 'Rocky', email: 'rocky@email.com' });
+  const [profile, setProfile] = useState({ name: 'NYDEX User', email: localStorage.getItem('nydex_user_email') || 'user@example.com', plan: 'Checking...', has_active_plan: false });
+  const [billingHistory, setBillingHistory] = useState([]);
+  const [validUntil, setValidUntil] = useState('Fetching...');
+
   const [tradingPrefs, setTradingPrefs] = useState({ market: 'NAS100', style: 'Scalping', session: 'New York', risk: 1 });
   const [aiPrefs, setAiPrefs] = useState({ mode: 'Detailed', strategy: 'ICT Concepts (Internal Range)', news: true, prob: true });
   const [notifications, setNotifications] = useState({ ready: true, news: true, daily: false, billing: true });
@@ -32,6 +35,21 @@ export const SettingsPage = () => {
   const [is2FAEnabled, setIs2FAEnabled] = useState(false);
   const { theme, setTheme } = useTheme();
   const navigate = useNavigate();
+
+  React.useEffect(() => {
+    import('../services/api').then(({ default: api }) => {
+      api.get('/users/me/').then(res => {
+        setProfile({
+          name: res.data.name,
+          email: res.data.email,
+          plan: res.data.plan_name || 'Free',
+          has_active_plan: res.data.has_active_plan
+        });
+        setValidUntil(res.data.valid_until);
+        setBillingHistory(res.data.history || []);
+      }).catch(err => console.error("Profile Fetch Error", err));
+    });
+  }, []);
 
   const renderSection = () => {
     switch (activeSection) {
@@ -50,38 +68,41 @@ export const SettingsPage = () => {
               <div>
                 <h3 className="text-2xl font-black">{profile.name}</h3>
                 <p className="text-muted-foreground">{profile.email}</p>
+                {profile.plan === 'Trial' && validUntil && (
+                  <p className="text-sm font-bold text-green-500 mt-1">Trial valid until {new Date(validUntil).toLocaleDateString()}</p>
+                )}
               </div>
             </div>
 
             <div className="grid gap-4 max-w-md">
               <div className="space-y-2">
                 <label className="text-xs font-black uppercase tracking-widest text-muted-foreground">Name</label>
-                <input 
-                  type="text" 
-                  value={profile.name} 
-                  onChange={(e) => setProfile({...profile, name: e.target.value})}
-                  className="w-full bg-muted/50 border border-border rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-primary outline-none transition-all" 
+                <input
+                  type="text"
+                  value={profile.name}
+                  onChange={(e) => setProfile({ ...profile, name: e.target.value })}
+                  className="w-full bg-muted/50 border border-border rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-primary outline-none transition-all"
                 />
               </div>
               <div className="space-y-2">
                 <label className="text-xs font-black uppercase tracking-widest text-muted-foreground">Email</label>
-                <input 
-                  type="email" 
-                  value={profile.email} 
-                  onChange={(e) => setProfile({...profile, email: e.target.value})}
-                  className="w-full bg-muted/50 border border-border rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-primary outline-none transition-all" 
+                <input
+                  type="email"
+                  value={profile.email}
+                  onChange={(e) => setProfile({ ...profile, email: e.target.value })}
+                  className="w-full bg-muted/50 border border-border rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-primary outline-none transition-all"
                 />
               </div>
             </div>
 
             <div className="flex flex-wrap gap-4 pt-4">
-              <button 
+              <button
                 onClick={() => alert('Profile updated successfully!')}
                 className="flex-1 sm:flex-none px-6 py-3 bg-primary text-primary-foreground rounded-xl font-bold flex items-center justify-center gap-2 hover:opacity-90 transition-all shadow-lg shadow-primary/10"
               >
                 <User className="w-4 h-4" /> Update Profile
               </button>
-              <button 
+              <button
                 onClick={() => alert('Password change request sent to email.')}
                 className="flex-1 sm:flex-none px-6 py-3 bg-muted text-foreground rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-muted/80 transition-all font-bold"
               >
@@ -89,7 +110,16 @@ export const SettingsPage = () => {
               </button>
             </div>
 
-            <div className="pt-8 border-t border-border">
+            <div className="pt-8 border-t border-border flex justify-between items-center">
+              <button
+                onClick={() => {
+                  localStorage.clear();
+                  window.location.href = '/login';
+                }}
+                className="flex-1 sm:flex-none px-6 py-3 bg-destructive/10 text-destructive rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-destructive/20 transition-all text-sm"
+              >
+                Log Out Device
+              </button>
               <button className="text-destructive font-black flex items-center gap-2 hover:opacity-80 transition-all uppercase tracking-widest text-[10px]">
                 <Trash2 className="w-4 h-4" /> Delete Account
               </button>
@@ -106,37 +136,45 @@ export const SettingsPage = () => {
                   <Zap className="w-8 h-8 text-primary" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-black">Basic Plan</h3>
-                  <p className="text-muted-foreground text-sm mt-1">Next Billing: <span className="font-bold text-foreground">April 20, 2024</span></p>
+                  <h3 className="text-xl font-black">{profile.plan === 'Free' || !profile.has_active_plan ? 'No Active Plan' : profile.plan}</h3>
+                  <p className="text-muted-foreground text-sm mt-1">Status: <span className="font-bold text-foreground">{profile.has_active_plan ? `Active until ${validUntil}` : 'Inactive'}</span></p>
                 </div>
               </div>
               <div className="flex gap-3">
                 <button onClick={() => navigate('/subscription')} className="px-6 py-3 bg-primary text-primary-foreground rounded-xl font-bold shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-all">
-                  Upgrade to Pro
+                  {profile.has_active_plan ? 'Change Plan' : 'Purchase Plan'}
                 </button>
-                <button className="px-6 py-3 bg-muted text-foreground rounded-xl font-bold hover:bg-muted/80 transition-all">
-                  Cancel Plan
-                </button>
+                {profile.has_active_plan && (
+                  <button
+                    onClick={() => {
+                      if (window.confirm('Are you sure you want to cancel your active subscription? You will lose access to NYDEX AI analysis.')) {
+                        alert('Subscription cancellation request sent.');
+                      }
+                    }}
+                    className="px-6 py-3 bg-destructive/10 text-destructive rounded-xl font-bold hover:bg-destructive/20 transition-all text-sm"
+                  >
+                    Cancel Plan
+                  </button>
+                )}
               </div>
             </div>
 
             <div className="space-y-4">
               <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Billing History</h4>
               <div className="border border-border rounded-2xl overflow-hidden">
-                {[
-                  { id: '1', date: 'Mar 20, 2024', amount: '₹799', status: 'Paid' },
-                  { id: '2', date: 'Feb 20, 2024', amount: '₹799', status: 'Paid' },
-                ].map(invoice => (
+                {billingHistory.length === 0 ? (
+                  <div className="p-6 text-center text-muted-foreground text-sm">No recent transactions found.</div>
+                ) : billingHistory.map(invoice => (
                   <div key={invoice.id} className="flex items-center justify-between p-4 border-b border-border last:border-0 hover:bg-muted/30 transition-colors">
                     <div className="flex items-center gap-3">
                       <div className="p-2 bg-muted rounded-lg"><FileText className="w-4 h-4" /></div>
                       <div>
                         <p className="text-sm font-bold">{invoice.date}</p>
-                        <p className="text-[10px] uppercase text-muted-foreground">{invoice.status}</p>
+                        <p className="text-[10px] uppercase text-muted-foreground">{invoice.status} • {invoice.plan}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-4">
-                      <span className="font-bold">{invoice.amount}</span>
+                      <span className="font-bold">{invoice.currency === 'INR' ? '₹' : '$'}{invoice.amount}</span>
                       <Download className="w-4 h-4 text-muted-foreground cursor-pointer" />
                     </div>
                   </div>
@@ -152,9 +190,9 @@ export const SettingsPage = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Default Market</label>
-                <select 
+                <select
                   value={tradingPrefs.market}
-                  onChange={(e) => setTradingPrefs({...tradingPrefs, market: e.target.value})}
+                  onChange={(e) => setTradingPrefs({ ...tradingPrefs, market: e.target.value })}
                   className="w-full bg-muted/50 border border-border rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-primary outline-none"
                 >
                   <option>NAS100</option><option>US30</option><option>SPX</option><option>GOLD</option><option>FOREX</option><option>CRYPTO</option>
@@ -162,9 +200,9 @@ export const SettingsPage = () => {
               </div>
               <div className="space-y-2">
                 <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Trading Style</label>
-                <select 
+                <select
                   value={tradingPrefs.style}
-                  onChange={(e) => setTradingPrefs({...tradingPrefs, style: e.target.value})}
+                  onChange={(e) => setTradingPrefs({ ...tradingPrefs, style: e.target.value })}
                   className="w-full bg-muted/50 border border-border rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-primary outline-none"
                 >
                   <option>Scalping</option><option>Intraday</option><option>Swing</option>
@@ -172,9 +210,9 @@ export const SettingsPage = () => {
               </div>
               <div className="space-y-2">
                 <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Default Session</label>
-                <select 
+                <select
                   value={tradingPrefs.session}
-                  onChange={(e) => setTradingPrefs({...tradingPrefs, session: e.target.value})}
+                  onChange={(e) => setTradingPrefs({ ...tradingPrefs, session: e.target.value })}
                   className="w-full bg-muted/50 border border-border rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-primary outline-none"
                 >
                   <option>New York</option><option>London</option><option>Asian</option><option>Auto</option>
@@ -183,17 +221,17 @@ export const SettingsPage = () => {
               <div className="space-y-2">
                 <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Risk % per trade</label>
                 <div className="relative">
-                  <input 
-                    type="number" 
+                  <input
+                    type="number"
                     value={tradingPrefs.risk}
-                    onChange={(e) => setTradingPrefs({...tradingPrefs, risk: e.target.value})}
-                    className="w-full bg-muted/50 border border-border rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-primary outline-none" 
+                    onChange={(e) => setTradingPrefs({ ...tradingPrefs, risk: e.target.value })}
+                    className="w-full bg-muted/50 border border-border rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-primary outline-none"
                   />
                   <span className="absolute right-4 top-1/2 -translate-y-1/2 font-bold text-muted-foreground">%</span>
                 </div>
               </div>
             </div>
-            <button 
+            <button
               onClick={() => alert('Trading preferences saved!')}
               className="w-full sm:w-auto px-8 py-4 bg-primary text-primary-foreground rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-xl shadow-primary/20 hover:shadow-primary/40 transition-all active:scale-95"
             >
@@ -206,49 +244,49 @@ export const SettingsPage = () => {
         return (
           <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500 max-w-md">
             <div className="space-y-4">
-                <div>
-                  <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-3">Analysis Mode</h4>
-                  <div className="grid grid-cols-2 gap-3">
-                    <button 
-                      onClick={() => setAiPrefs({...aiPrefs, mode: 'Detailed'})}
-                      className={`p-4 rounded-xl border-2 font-bold text-sm transition-all ${aiPrefs.mode === 'Detailed' ? 'border-primary bg-primary/5' : 'border-border bg-muted/20 text-muted-foreground'}`}
-                    >Detailed</button>
-                    <button 
-                      onClick={() => setAiPrefs({...aiPrefs, mode: 'Quick'})}
-                      className={`p-4 rounded-xl border-2 font-bold text-sm transition-all ${aiPrefs.mode === 'Quick' ? 'border-primary bg-primary/5' : 'border-border bg-muted/20 text-muted-foreground'}`}
-                    >Quick</button>
-                  </div>
-               </div>
-               <div>
-                  <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-3">Strategy Framework</h4>
-                  <div className="grid gap-2">
-                    {['ICT Concepts (Internal Range)', 'Price Action (S&R)', 'Order Flow / Footprint'].map(s => (
-                      <button 
-                        key={s} 
-                        onClick={() => setAiPrefs({...aiPrefs, strategy: s})}
-                        className={`p-4 rounded-xl border text-left font-bold text-sm transition-all ${aiPrefs.strategy === s ? 'border-primary bg-primary/5' : 'border-border opacity-50'}`}
-                      >
-                        {s}
-                      </button>
-                    ))}
-                  </div>
-               </div>
-               <div className="space-y-4 pt-4">
-                  {[
-                    { id: 'news', label: 'Include News Analysis', desc: 'Sync with ForexFactory' },
-                    { id: 'prob', label: 'Show Probability %', desc: 'Display confidence score' }
-                  ].map(item => (
-                    <div key={item.id} className="flex items-center justify-between group cursor-pointer" onClick={() => setAiPrefs({...aiPrefs, [item.id]: !aiPrefs[item.id]})}>
-                      <div>
-                        <p className="text-sm font-bold">{item.label}</p>
-                        <p className="text-xs text-muted-foreground">{item.desc}</p>
-                      </div>
-                      <div className={`w-12 h-6 rounded-full relative p-1 transition-all ${aiPrefs[item.id] ? 'bg-primary' : 'bg-muted border border-border'}`}>
-                        <div className={`w-4 h-4 rounded-full transition-all ${aiPrefs[item.id] ? 'bg-primary-foreground ml-auto' : 'bg-muted-foreground'}`} />
-                      </div>
-                    </div>
+              <div>
+                <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-3">Analysis Mode</h4>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    onClick={() => setAiPrefs({ ...aiPrefs, mode: 'Detailed' })}
+                    className={`p-4 rounded-xl border-2 font-bold text-sm transition-all ${aiPrefs.mode === 'Detailed' ? 'border-primary bg-primary/5' : 'border-border bg-muted/20 text-muted-foreground'}`}
+                  >Detailed</button>
+                  <button
+                    onClick={() => setAiPrefs({ ...aiPrefs, mode: 'Quick' })}
+                    className={`p-4 rounded-xl border-2 font-bold text-sm transition-all ${aiPrefs.mode === 'Quick' ? 'border-primary bg-primary/5' : 'border-border bg-muted/20 text-muted-foreground'}`}
+                  >Quick</button>
+                </div>
+              </div>
+              <div>
+                <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-3">Strategy Framework</h4>
+                <div className="grid gap-2">
+                  {['ICT Concepts (Internal Range)', 'Price Action (S&R)', 'Order Flow / Footprint'].map(s => (
+                    <button
+                      key={s}
+                      onClick={() => setAiPrefs({ ...aiPrefs, strategy: s })}
+                      className={`p-4 rounded-xl border text-left font-bold text-sm transition-all ${aiPrefs.strategy === s ? 'border-primary bg-primary/5' : 'border-border opacity-50'}`}
+                    >
+                      {s}
+                    </button>
                   ))}
-               </div>
+                </div>
+              </div>
+              <div className="space-y-4 pt-4">
+                {[
+                  { id: 'news', label: 'Include News Analysis', desc: 'Sync with ForexFactory' },
+                  { id: 'prob', label: 'Show Probability %', desc: 'Display confidence score' }
+                ].map(item => (
+                  <div key={item.id} className="flex items-center justify-between group cursor-pointer" onClick={() => setAiPrefs({ ...aiPrefs, [item.id]: !aiPrefs[item.id] })}>
+                    <div>
+                      <p className="text-sm font-bold">{item.label}</p>
+                      <p className="text-xs text-muted-foreground">{item.desc}</p>
+                    </div>
+                    <div className={`w-12 h-6 rounded-full relative p-1 transition-all ${aiPrefs[item.id] ? 'bg-primary' : 'bg-muted border border-border'}`}>
+                      <div className={`w-4 h-4 rounded-full transition-all ${aiPrefs[item.id] ? 'bg-primary-foreground ml-auto' : 'bg-muted-foreground'}`} />
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         );
@@ -263,7 +301,7 @@ export const SettingsPage = () => {
                 { id: 'daily', label: 'Daily market bias notification' },
                 { id: 'billing', label: 'Subscription & Billing alerts' },
               ].map((item) => (
-                <label key={item.id} className="flex items-center gap-4 group cursor-pointer" onClick={() => setNotifications({...notifications, [item.id]: !notifications[item.id]})}>
+                <label key={item.id} className="flex items-center gap-4 group cursor-pointer" onClick={() => setNotifications({ ...notifications, [item.id]: !notifications[item.id] })}>
                   <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ${notifications[item.id] ? 'bg-primary border-primary' : 'border-border group-hover:border-primary/50'}`}>
                     {notifications[item.id] && <ShieldCheck className="w-4 h-4 text-primary-foreground" />}
                   </div>
@@ -284,14 +322,14 @@ export const SettingsPage = () => {
                   { id: 'dark', icon: Moon, label: 'Dark' },
                   { id: 'light', icon: Sun, label: 'Light' },
                 ].map(t => (
-                   <button 
+                  <button
                     key={t.id}
                     onClick={() => setTheme(t.id)}
                     className={`p-6 rounded-3xl border-2 flex flex-col items-center gap-4 transition-all ${theme === t.id ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/30'}`}
-                   >
+                  >
                     <t.icon className={`w-8 h-8 ${theme === t.id ? 'text-primary' : 'text-muted-foreground'}`} />
                     <span className="font-black uppercase tracking-widest text-[10px]">{t.label}</span>
-                   </button>
+                  </button>
                 ))}
                 <div className="p-6 rounded-3xl border border-dashed border-border flex flex-col items-center justify-center gap-4 opacity-30 cursor-not-allowed">
                   <Square className="w-8 h-8" />
@@ -303,17 +341,17 @@ export const SettingsPage = () => {
             <div className="space-y-4">
               <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Display Settings</h4>
               <div className="flex items-center gap-8 max-w-sm bg-muted rounded-2xl p-4">
-                 <Type className="w-4 h-4 text-muted-foreground" />
-                 <input 
-                  type="range" 
-                  min="12" 
-                  max="24" 
+                <Type className="w-4 h-4 text-muted-foreground" />
+                <input
+                  type="range"
+                  min="12"
+                  max="24"
                   value={fontSize}
                   onChange={(e) => setFontSize(e.target.value)}
-                  className="flex-1 accent-primary" 
+                  className="flex-1 accent-primary"
                 />
-                 <Type className="w-6 h-6" />
-                 <span className="text-xs font-bold text-muted-foreground w-8">{fontSize}px</span>
+                <Type className="w-6 h-6" />
+                <span className="text-xs font-bold text-muted-foreground w-8">{fontSize}px</span>
               </div>
             </div>
           </div>
@@ -332,7 +370,7 @@ export const SettingsPage = () => {
                   <p className="text-xs text-muted-foreground">2FA is currently {is2FAEnabled ? 'enabled' : 'disabled'}</p>
                 </div>
               </div>
-              <button 
+              <button
                 onClick={() => setIs2FAEnabled(!is2FAEnabled)}
                 className={`px-6 py-2 rounded-xl font-bold text-xs uppercase tracking-widest transition-all ${is2FAEnabled ? 'bg-muted text-foreground' : 'bg-foreground text-background'}`}
               >
@@ -341,23 +379,31 @@ export const SettingsPage = () => {
             </div>
 
             <div className="space-y-4">
-               <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Active Sessions</h4>
-               {[
-                 { device: 'Windows PC • Chrome', location: 'London, UK', status: 'Active Now' },
-                 { device: 'iPhone 15 Pro • Safari', location: 'London, UK', status: '2 hours ago' },
-               ].map((session, i) => (
-                 <div key={i} className="flex items-center justify-between p-4 bg-card border border-border rounded-2xl">
-                   <div className="flex items-center gap-3">
-                     <Globe className="w-5 h-5 text-muted-foreground" />
-                     <div>
-                       <p className="text-sm font-bold">{session.device}</p>
-                       <p className="text-[10px] text-muted-foreground uppercase">{session.location} • {session.status}</p>
-                     </div>
-                   </div>
-                   {i !== 0 && <button className="text-[10px] font-black text-destructive uppercase">Log out</button>}
-                 </div>
-               ))}
-               <button className="text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-primary pt-2">Logout All Other Devices</button>
+              <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Active Sessions</h4>
+              {[
+                { device: 'Windows PC • Chrome', location: 'London, UK', status: 'Active Now' },
+                { device: 'iPhone 15 Pro • Safari', location: 'London, UK', status: '2 hours ago' },
+              ].map((session, i) => (
+                <div key={i} className="flex items-center justify-between p-4 bg-card border border-border rounded-2xl">
+                  <div className="flex items-center gap-3">
+                    <Globe className="w-5 h-5 text-muted-foreground" />
+                    <div>
+                      <p className="text-sm font-bold">{session.device}</p>
+                      <p className="text-[10px] text-muted-foreground uppercase">{session.location} • {session.status}</p>
+                    </div>
+                  </div>
+                  {i !== 0 && <button className="text-[10px] font-black text-destructive uppercase">Log out</button>}
+                </div>
+              ))}
+              <button
+                onClick={() => {
+                  localStorage.clear();
+                  window.location.href = '/login';
+                }}
+                className="text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-primary pt-2"
+              >
+                Logout All Other Devices
+              </button>
             </div>
           </div>
         );
@@ -365,44 +411,44 @@ export const SettingsPage = () => {
       case 'data':
         return (
           <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500 max-w-md">
-             <div className="grid gap-4">
-               <button 
+            <div className="grid gap-4">
+              <button
                 onClick={() => alert('Exporting data...')}
                 className="p-6 bg-muted/30 border border-border rounded-3xl flex items-center justify-between hover:border-primary/50 transition-all text-left group"
-               >
-                 <div className="flex items-center gap-3">
-                   <Download className="w-5 h-5 group-hover:text-primary transition-colors" />
-                   <span className="font-bold">Export My Data</span>
-                 </div>
-                 <ChevronRight className="w-4 h-4" />
-               </button>
-               <button 
+              >
+                <div className="flex items-center gap-3">
+                  <Download className="w-5 h-5 group-hover:text-primary transition-colors" />
+                  <span className="font-bold">Export My Data</span>
+                </div>
+                <ChevronRight className="w-4 h-4" />
+              </button>
+              <button
                 onClick={() => alert('Analysis history cleared!')}
                 className="p-6 bg-muted/30 border border-border rounded-3xl flex items-center justify-between hover:border-destructive/50 transition-all text-left group"
-               >
-                 <div className="flex items-center gap-3">
-                   <HistoryIcon className="w-5 h-5 group-hover:text-destructive transition-colors" />
-                   <span className="font-bold group-hover:text-destructive transition-colors">Clear Analysis History</span>
-                 </div>
-                 <ChevronRight className="w-4 h-4" />
-               </button>
-               <button 
+              >
+                <div className="flex items-center gap-3">
+                  <HistoryIcon className="w-5 h-5 group-hover:text-destructive transition-colors" />
+                  <span className="font-bold group-hover:text-destructive transition-colors">Clear Analysis History</span>
+                </div>
+                <ChevronRight className="w-4 h-4" />
+              </button>
+              <button
                 onClick={() => alert('Deleting all data... this action is irreversible.')}
                 className="p-6 bg-muted/30 border border-border rounded-3xl flex items-center justify-between hover:border-destructive/50 transition-all text-left group"
-               >
-                 <div className="flex items-center gap-3">
-                   <Trash className="w-5 h-5 group-hover:text-destructive transition-colors" />
-                   <span className="font-bold group-hover:text-destructive transition-colors">Delete All My Data</span>
-                 </div>
-                 <ChevronRight className="w-4 h-4" />
-               </button>
-             </div>
-             <div className="p-6 bg-card border border-border rounded-3xl">
-                <p className="text-xs text-muted-foreground leading-relaxed">
-                  Your data is encrypted and used solely for personal analysis. We do not sell your data to third parties. 
-                  <a href="#" className="underline ml-1">Read our Privacy Policy</a>
-                </p>
-             </div>
+              >
+                <div className="flex items-center gap-3">
+                  <Trash className="w-5 h-5 group-hover:text-destructive transition-colors" />
+                  <span className="font-bold group-hover:text-destructive transition-colors">Delete All My Data</span>
+                </div>
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="p-6 bg-card border border-border rounded-3xl">
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Your data is encrypted and used solely for personal analysis. We do not sell your data to third parties.
+                <a href="#" className="underline ml-1">Read our Privacy Policy</a>
+              </p>
+            </div>
           </div>
         );
 
@@ -424,10 +470,10 @@ export const SettingsPage = () => {
                   { id: 'privacy', label: 'Privacy Policy', icon: Shield },
                   { id: 'help', label: 'Help Center', icon: HelpCircle },
                 ].map(item => (
-                   <button key={item.id} className="flex items-center gap-3 p-4 hover:bg-muted rounded-2xl transition-all font-bold text-sm">
-                     <item.icon className="w-4 h-4 text-muted-foreground" />
-                     {item.label}
-                   </button>
+                  <button key={item.id} className="flex items-center gap-3 p-4 hover:bg-muted rounded-2xl transition-all font-bold text-sm">
+                    <item.icon className="w-4 h-4 text-muted-foreground" />
+                    {item.label}
+                  </button>
                 ))}
               </div>
             </div>
@@ -448,7 +494,7 @@ export const SettingsPage = () => {
           <div className="hidden lg:block">
             <h2 className="text-3xl font-black tracking-tight mb-8">Settings</h2>
           </div>
-          
+
           {/* Mobile Scrollable Nav */}
           <div className="flex lg:flex-col overflow-x-auto lg:overflow-x-visible pb-4 lg:pb-0 scrollbar-none gap-2">
             {SECTIONS.map(item => (
@@ -456,8 +502,8 @@ export const SettingsPage = () => {
                 key={item.id}
                 onClick={() => setActiveSection(item.id)}
                 className={`flex items-center gap-3 px-4 py-3 rounded-2xl font-bold text-sm transition-all whitespace-nowrap shrink-0
-                  ${activeSection === item.id 
-                    ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20' 
+                  ${activeSection === item.id
+                    ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20'
                     : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                   }
                 `}
@@ -472,13 +518,13 @@ export const SettingsPage = () => {
 
       {/* Settings Content Area */}
       <div className="flex-1 min-w-0">
-         <div className="max-w-4xl">
-            <div className="mb-10 lg:block">
-               <h3 className="text-2xl font-black">{SECTIONS.find(s => s.id === activeSection).label}</h3>
-               <div className="h-1 w-12 bg-primary mt-3 rounded-full" />
-            </div>
-            {renderSection()}
-         </div>
+        <div className="max-w-4xl">
+          <div className="mb-10 lg:block">
+            <h3 className="text-2xl font-black">{SECTIONS.find(s => s.id === activeSection).label}</h3>
+            <div className="h-1 w-12 bg-primary mt-3 rounded-full" />
+          </div>
+          {renderSection()}
+        </div>
       </div>
     </div>
   );

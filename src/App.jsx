@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Outlet } from 'react-router-dom';
 import { ThemeProvider } from './context/ThemeContext';
 import { Layout } from './components/Layout';
 import { MarketingLayout } from './components/marketing/MarketingLayout';
@@ -11,51 +11,50 @@ import { HistoryPage } from './pages/History';
 import { SubscriptionPage } from './pages/Subscription';
 import { SettingsPage } from './pages/Settings';
 import { LandingPage } from './pages/LandingPage';
+import { Journal } from './pages/Journal';
+import AdminDashboard from './pages/AdminDashboard';
+import { AdminLogin } from './pages/AdminLogin';
+import { ProtectedRoute } from './components/ProtectedRoute';
+
+const AppLayoutWrapper = () => (
+  <ProtectedRoute>
+    <Layout>
+      <Outlet />
+    </Layout>
+  </ProtectedRoute>
+);
+
+const MarketingLayoutWrapper = () => (
+  <MarketingLayout>
+    <Outlet />
+  </MarketingLayout>
+);
 
 function App() {
-  const [isAppRoute, setIsAppRoute] = useState(false);
-
-  useEffect(() => {
-    // Determine whether to serve AI Platform or Marketing Site based on URL
-    const hostname = window.location.hostname;
-    if (hostname.startsWith('ai.') || window.location.pathname.startsWith('/app')) {
-      setIsAppRoute(true);
-    } else {
-      // By default locally or on nydex.in, serve marketing site
-      setIsAppRoute(false);
-    }
-  }, []);
-
-  if (!isAppRoute) {
-    return (
-      <ThemeProvider>
-        <Router>
-          <MarketingLayout>
-            <Routes>
-              <Route path="/" element={<LandingPage />} />
-              {/* Optional fallback, allow navigation to app pages directly from marketing domain during dev */}
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
-            </Routes>
-          </MarketingLayout>
-        </Router>
-      </ThemeProvider>
-    );
-  }
-
   return (
     <ThemeProvider>
       <Router>
-        <Layout>
-          <Routes>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
+        <Routes>
+          {/* App Routes */}
+          <Route element={<AppLayoutWrapper />}>
+            <Route path="/admin-dashboard" element={<AdminDashboard />} />
+            <Route path="/app" element={<Dashboard />} />
+            <Route path="/journal" element={<Journal />} />
             <Route path="/history" element={<HistoryPage />} />
             <Route path="/subscription" element={<SubscriptionPage />} />
             <Route path="/settings" element={<SettingsPage />} />
-          </Routes>
-        </Layout>
+          </Route>
+
+          {/* Marketing Routes */}
+          <Route element={<MarketingLayoutWrapper />}>
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+          </Route>
+
+          {/* Admin Login - standalone */}
+          <Route path="/admin-login" element={<AdminLogin />} />
+        </Routes>
       </Router>
     </ThemeProvider>
   );

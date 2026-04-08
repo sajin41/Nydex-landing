@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import api from '../services/api';
 
 export const Login = () => {
   const [formData, setFormData] = useState({ username: '', password: '' });
   const [error, setError] = useState('');
-  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -13,9 +12,15 @@ export const Login = () => {
       const res = await api.post('login/', formData);
       localStorage.setItem('token', res.data.access);
       localStorage.setItem('refresh', res.data.refresh);
-      navigate('/');
+      
+      // Initialize 10-minute trial
+      localStorage.setItem('nydex_trial_active', 'true');
+      localStorage.setItem('nydex_trial_start', new Date().toISOString());
+      localStorage.setItem('nydex_user_email', formData.username);
+      
+      window.location.href = '/app';
     } catch (err) {
-      setError('Invalid credentials');
+      setError(err.response?.data?.detail || 'Invalid credentials');
     }
   };
 

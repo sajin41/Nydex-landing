@@ -1,133 +1,103 @@
-import React, { useState } from 'react';
-import { Check, Zap, Shield, Crown, X, Loader2 } from 'lucide-react';
-
-const PLANS = [
-  { id: 'free', name: 'Free', price: '₹0', period: '/month', features: ['7 analyses per month', 'Basic ICT analysis', 'Community access', 'Email support'], icon: Shield },
-  { id: 'basic', name: 'Basic', price: '₹799', period: '/month', features: ['2 analyses per day', 'Entry, Stop Loss & Targets', 'Standard ICT concepts', 'Priority support'], icon: Zap, highlight: true },
-  { id: 'pro', name: 'Pro', price: '₹1499', period: '/month', features: ['Unlimited analyses', 'Probability % & Win Rate', 'Detailed ICT Reasoning', 'Trade Review & Mentorship'], icon: Crown }
-];
+import React, { useState, useEffect } from 'react';
+import { PricingSection } from '../components/marketing/PricingSection';
+import { Zap, Download, FileText, CheckCircle2 } from 'lucide-react';
+import api from '../services/api';
 
 export const SubscriptionPage = () => {
-  const [selectedPlan, setSelectedPlan] = useState(null);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [status, setStatus] = useState('ideal'); // ideal, processing, success
+  const [isSubscribed, setIsSubscribed] = useState(false);
+  const [activePlan, setActivePlan] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
 
-  const handleUpgrade = (plan) => {
-    setSelectedPlan(plan);
-    setStatus('ideal');
-  };
+  useEffect(() => {
+    const checkPlan = async () => {
+      try {
+        const res = await api.get('/users/me/');
+        if (res.data.has_active_plan && res.data.plan_name !== 'Free') {
+          setIsSubscribed(true);
+          setActivePlan(res.data.plan_name);
+        } else {
+          setIsSubscribed(false);
+        }
+      } catch (err) {
+        setIsSubscribed(false);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    checkPlan();
+  }, []);
 
-  const handlePayment = () => {
-    setIsProcessing(true);
-    setStatus('processing');
-    setTimeout(() => {
-      setIsProcessing(false);
-      setStatus('success');
-      // Update local plan if needed
-    }, 2000);
-  };
+  if (isLoading) return <div className="p-20 text-center text-muted-foreground animate-pulse text-lg font-bold">Verifying Plan...</div>;
 
-  return (
-    <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-20">
-      <div className="text-center space-y-4">
-        <h2 className="text-4xl font-black tracking-tight">Select Your Plan</h2>
-        <p className="text-muted-foreground text-lg max-w-2xl mx-auto">Elevate your trading with AI-powered ICT insights.</p>
-      </div>
+  if (isSubscribed) {
+    return (
+      <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 py-12 px-4 max-w-5xl mx-auto">
+        <h2 className="text-4xl font-black mb-8 text-foreground tracking-tight">Your Subscription</h2>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        {PLANS.map((plan) => {
-          const Icon = plan.icon;
-          return (
-            <div key={plan.id} className={`relative bg-card border border-border rounded-3xl p-8 shadow-sm transition-all hover:shadow-xl hover:-translate-y-1 ${plan.highlight ? 'ring-2 ring-primary border-primary/50' : ''}`}>
-              {plan.highlight && <div className="absolute top-0 right-0 bg-primary text-primary-foreground text-[10px] font-bold px-3 py-1 rounded-bl-xl uppercase tracking-widest">Most Popular</div>}
-              <div className="flex items-center gap-3 mb-6">
-                <div className="p-3 bg-primary/10 rounded-2xl"><Icon className="w-6 h-6 text-primary" /></div>
-                <h3 className="text-xl font-bold">{plan.name}</h3>
-              </div>
-              <div className="mb-6">
-                <span className="text-4xl font-black">{plan.price}</span>
-                <span className="text-muted-foreground font-medium">{plan.period}</span>
-              </div>
-              <ul className="space-y-4 mb-8">
-                {plan.features.map(f => (
-                  <li key={f} className="flex items-start gap-3 text-sm">
-                    <div className="mt-0.5 p-0.5 bg-green-500/20 rounded-full"><Check className="w-3 h-3 text-green-500" /></div>
-                    {f}
-                  </li>
-                ))}
-              </ul>
-              <button 
-                onClick={() => plan.id !== 'free' && handleUpgrade(plan)}
-                className={`w-full py-4 rounded-xl font-bold transition-all ${plan.id === 'free' ? 'bg-muted text-muted-foreground cursor-default' : 'bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg shadow-primary/20 hover:shadow-primary/40'}`}
-              >
-                {plan.id === 'free' ? 'Current Plan' : `Upgrade to ${plan.name}`}
-              </button>
+        <div className="p-8 bg-card border-2 border-primary/30 shadow-[0_0_50px_-12px_rgba(255,255,255,0.1)] rounded-[2.5rem] flex flex-col md:flex-row md:items-center justify-between gap-8 relative overflow-hidden">
+          <div className="absolute top-0 right-0 p-8 opacity-5">
+            <Zap className="w-48 h-48" />
+          </div>
+
+          <div className="flex items-center gap-6 relative z-10">
+            <div className="w-20 h-20 bg-primary/10 rounded-3xl flex items-center justify-center shadow-inner">
+              <Zap className="w-10 h-10 text-primary drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]" />
             </div>
-          );
-        })}
-      </div>
-
-      {/* Dummy Razorpay Modal */}
-      {selectedPlan && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm animate-in fade-in duration-300">
-          <div className="bg-card border border-border rounded-3xl p-8 max-w-md w-full shadow-2xl relative overflow-hidden">
-            {status !== 'success' && (
-              <button onClick={() => setSelectedPlan(null)} className="absolute top-4 right-4 p-2 hover:bg-muted rounded-full"><X className="w-5 h-5" /></button>
-            )}
-
-            <div className="text-center space-y-6">
-              <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto">
-                <selectedPlan.icon className="w-8 h-8 text-primary" />
+            <div>
+              <div className="flex items-center gap-3">
+                <h3 className="text-3xl font-black">{activePlan} Plan</h3>
+                <span className="bg-green-500/20 text-green-500 border border-green-500/30 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 uppercase tracking-widest">
+                  <CheckCircle2 className="w-3 h-3" /> Active
+                </span>
               </div>
-
-              {status === 'ideal' && (
-                <>
-                  <div>
-                    <h3 className="text-2xl font-bold">Subscription Demo</h3>
-                    <p className="text-muted-foreground text-sm mt-1">Setup your {selectedPlan.name} membership</p>
-                  </div>
-                  <div className="bg-muted/50 rounded-2xl p-4 flex justify-between items-center">
-                    <span className="font-bold">{selectedPlan.name} Plan</span>
-                    <span className="text-xl font-black">{selectedPlan.price}<span className="text-xs font-normal">/mo</span></span>
-                  </div>
-                  <button 
-                    onClick={handlePayment}
-                    className="w-full py-4 bg-primary text-primary-foreground rounded-xl font-bold shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-all transform active:scale-95"
-                  >
-                    PROCEED TO PAYMENT
-                  </button>
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-widest">Secure Razorpay Sandbox (Demo Mode)</p>
-                </>
-              )}
-
-              {status === 'processing' && (
-                <div className="py-10 space-y-4">
-                  <Loader2 className="w-12 h-12 text-primary animate-spin mx-auto" />
-                  <p className="font-bold tracking-widest animate-pulse">AUTHORIZING PAYMENT...</p>
-                </div>
-              )}
-
-              {status === 'success' && (
-                <div className="py-6 space-y-6 animate-in zoom-in-95 duration-500">
-                  <div className="w-20 h-20 bg-green-500/10 rounded-full flex items-center justify-center mx-auto">
-                    <Check className="w-10 h-10 text-green-500" />
-                  </div>
-                  <div>
-                    <h3 className="text-2xl font-bold text-green-500">Payment Successful!</h3>
-                    <p className="text-muted-foreground text-sm mt-1">Your {selectedPlan.name} subscription is now active.</p>
-                  </div>
-                  <button 
-                    onClick={() => setSelectedPlan(null)}
-                    className="w-full py-4 bg-foreground text-background rounded-xl font-bold"
-                  >
-                    GET STARTED
-                  </button>
-                </div>
-              )}
+              <p className="text-muted-foreground mt-2 font-medium">Full AI Analysis Access • Auto-renews</p>
             </div>
           </div>
+
+          <div className="flex flex-col gap-3 relative z-10">
+            <button className="px-8 py-4 bg-primary text-primary-foreground rounded-2xl font-black shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-all hover:-translate-y-1">
+              Manage Billing
+            </button>
+          </div>
         </div>
-      )}
+
+        <div className="mt-12 space-y-6">
+          <h4 className="text-xs font-black uppercase tracking-widest text-muted-foreground px-2">Recent Invoices</h4>
+          <div className="bg-card border border-border rounded-3xl overflow-hidden shadow-xl">
+            {[
+              { id: '1', date: 'Today', amount: '₹14,999', status: 'Paid', method: 'Razorpay' },
+            ].map(invoice => (
+              <div key={invoice.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-6 border-b border-border last:border-0 hover:bg-muted/10 transition-colors gap-4">
+                <div className="flex items-center gap-5">
+                  <div className="w-12 h-12 bg-muted/50 rounded-2xl flex items-center justify-center"><FileText className="w-5 h-5 text-muted-foreground" /></div>
+                  <div>
+                    <p className="text-lg font-bold">{invoice.date}</p>
+                    <p className="text-xs uppercase font-medium text-muted-foreground tracking-wider">{invoice.method} • {invoice.status}</p>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between sm:justify-start gap-8">
+                  <span className="text-xl font-black">{invoice.amount}</span>
+                  <button className="p-3 bg-muted rounded-xl hover:bg-primary hover:text-primary-foreground transition-all cursor-pointer">
+                    <Download className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-20 mt-4">
+      {/* 
+        The PricingSection component internally renders "Simple, transparent pricing" 
+        along with the currency switchers, promo code banner, and pricing cards.
+      */}
+      <div className="-mx-4 lg:-mx-8">
+        <PricingSection />
+      </div>
     </div>
   );
 };
